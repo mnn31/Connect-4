@@ -1,0 +1,107 @@
+import java.io.*;
+import java.net.*;
+import com.sun.net.httpserver.*;
+import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.concurrent.Executors;
+
+public class GameServer {
+    private static final int PORT = 8080;
+    private Game game;
+
+    public GameServer() {
+        game = new Game();
+    }
+
+    public void start() throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
+        
+        server.createContext("/move", new MoveHandler());
+        server.createContext("/board", new BoardHandler());
+        server.createContext("/reset", new ResetHandler());
+
+        server.start();
+        System.out.println("Server started on port " + PORT);
+    }
+
+    private class MoveHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!exchange.getRequestMethod().equals("POST")) {
+                sendResponse(exchange, "Method not allowed", 405);
+                return;
+            }
+
+            try {
+                String requestBody = new String(exchange.getRequestBody().readAllBytes());
+                int column = Integer.parseInt(requestBody.split("=")[1]);
+                
+                boolean success = game.makeMove(column);
+                String response = createGameStateResponse();
+                sendResponse(exchange, response, 200);
+            } catch (Exception e) {
+                sendResponse(exchange, "Invalid move", 400);
+            }
+        }
+    }
+
+    private class BoardHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!exchange.getRequestMethod().equals("GET")) {
+                sendResponse(exchange, "Method not allowed", 405);
+                return;
+            }
+            String response = createGameStateResponse();
+            sendResponse(exchange, response, 200);
+        }
+    }
+
+    private class ResetHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!exchange.getRequestMethod().equals("POST")) {
+                sendResponse(exchange, "Method not allowed", 405);
+                return;
+            }
+            game.reset();
+            String response = createGameStateResponse();
+            sendResponse(exchange, response, 200);
+        }
+    }
+
+    private String createGameStateResponse() {
+        StringBuilder response = new StringBuilder();
+        
+        // Add board state
+        int[][] board = game.getBoard();
+        for (int[] row : board) {
+            for (int cell : row) {
+                response.append(cell).append(",");
+            }
+        }
+        
+        // Add game state
+        response.append("|");
+        response.append(game.isGameOver() ? "1" : "0").append(",");
+        response.append(game.getWinner());
+        
+        return response.toString();
+    }
+
+    private void sendResponse(HttpExchange exchange, String response, int statusCode) throws IOException {
+        exchange.getResponseHeaders().set("Content-Type", "text/plain");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+        
+        exchange.sendResponseHeaders(statusCode, response.length());
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        new GameServer().start();
+    }
+} 
