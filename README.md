@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Connect 4 Game
 
 A modern implementation of the classic Connect 4 game with a React frontend and Java backend.
@@ -40,3 +41,7 @@ A modern implementation of the classic Connect 4 game with a React frontend and 
 - Frontend: React, CSS3, HTML5
 - Backend: Java
 - Communication: REST API 
+=======
+# Connect-4
+Manan's Final Project in 2024-25 AP CS A with Ms Anu Datar
+>>>>>>> 066e6e8ff6a05d71920ee9216991267305a26205
