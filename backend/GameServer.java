@@ -19,6 +19,7 @@ public class GameServer {
         server.createContext("/move", new MoveHandler());
         server.createContext("/board", new BoardHandler());
         server.createContext("/reset", new ResetHandler());
+        server.createContext("/ai-move", new AIMoveHandler());
 
         server.start();
         System.out.println("Server started on port " + PORT);
@@ -70,6 +71,27 @@ public class GameServer {
         }
     }
 
+    private class AIMoveHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!exchange.getRequestMethod().equals("POST")) {
+                sendResponse(exchange, "Method not allowed", 405);
+                return;
+            }
+
+            try {
+                int aiMove = game.getAIMove();
+                if (aiMove != -1) {
+                    game.makeMove(aiMove);
+                }
+                String response = createGameStateResponse();
+                sendResponse(exchange, response, 200);
+            } catch (Exception e) {
+                sendResponse(exchange, "AI move failed", 400);
+            }
+        }
+    }
+
     private String createGameStateResponse() {
         StringBuilder response = new StringBuilder();
         
@@ -112,7 +134,19 @@ public class GameServer {
         }
     }
 
+    public void stop() {
+        if (game != null) {
+            game.cleanup();
+        }
+    }
+
     public static void main(String[] args) throws IOException {
-        new GameServer().start();
+        GameServer server = new GameServer();
+        server.start();
+        
+        // Add shutdown hook for cleanup
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            server.stop();
+        }));
     }
 } 

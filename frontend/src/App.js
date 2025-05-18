@@ -109,35 +109,18 @@ function App() {
     }
 
     try {
-      // Find available columns
-      const availableColumns = [];
-      for (let col = 0; col < 7; col++) {
-        if (board[0][col] === 0) {
-          availableColumns.push(col);
-        }
+      const response = await fetch('http://localhost:8080/ai-move', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('AI move failed');
       }
 
-      if (availableColumns.length > 0) {
-        // Randomly select a column
-        const randomCol = availableColumns[Math.floor(Math.random() * availableColumns.length)];
-        
-        const formData = new URLSearchParams();
-        formData.append('column', randomCol);
-
-        const response = await fetch('http://localhost:8080/move', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: formData.toString(),
-        });
-
-        if (!response.ok) {
-          throw new Error('AI move failed');
-        }
-
-        await fetchBoardState();
-      }
+      await fetchBoardState();
     } catch (error) {
       console.error('Error making AI move:', error);
     } finally {
