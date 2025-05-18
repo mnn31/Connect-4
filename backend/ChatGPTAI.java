@@ -179,17 +179,51 @@ public class ChatGPTAI {
             }
         }
 
+        // Check for potential diagonal threats (player is about to create a diagonal 3-in-a-row)
+        int blockDiagonalCol = findDiagonalThreats(board, 1);
+        if (blockDiagonalCol != -1) {
+            return blockDiagonalCol;
+        }
+
+        // Check for potential diagonal opportunities for AI
+        int createDiagonalCol = findDiagonalThreats(board, 2);
+        if (createDiagonalCol != -1) {
+            return createDiagonalCol;
+        }
+
         // Try to create opportunities (look for moves that create 3 in a row)
+        int bestCol = -1;
+        int bestScore = -1;
+        
         for (int col = 0; col < 7; col++) {
             if (isValidMove(board, col)) {
                 int row = getNextRow(board, col);
                 board[row][col] = 2; // Try AI's move
-                if (countConsecutive(board, row, col) >= 3) {
-                    board[row][col] = 0; // Undo move
-                    return col;
+                
+                // Get consecutive counts in all directions
+                int consecutive = countConsecutive(board, row, col);
+                int score = consecutive;
+                
+                // Prefer center column
+                if (col == 3) score += 2;
+                
+                // Check if this move blocks opponent's potential setup
+                board[row][col] = 0;  // Undo move
+                board[row][col] = 1;  // Simulate player move here
+                int opponentScore = countConsecutive(board, row, col);
+                if (opponentScore >= 3) score += 5;  // Higher priority to blocking potential wins
+                
+                board[row][col] = 0;  // Undo move
+                
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestCol = col;
                 }
-                board[row][col] = 0; // Undo move
             }
+        }
+        
+        if (bestCol != -1) {
+            return bestCol;
         }
 
         // If no strategic moves, choose randomly from available columns
@@ -276,53 +310,109 @@ public class ChatGPTAI {
         int maxCount = 0;
         
         // Check horizontal
-        int count = 0;
-        for (int c = 0; c < 7; c++) {
-            if (board[row][c] == player) {
-                count++;
-                maxCount = Math.max(maxCount, count);
-            } else {
-                count = 0;
-            }
-        }
+        int horizCount = countDirection(board, row, col, 0, -1) + 
+                         countDirection(board, row, col, 0, 1) + 1;
+        maxCount = Math.max(maxCount, horizCount);
         
         // Check vertical
-        count = 0;
-        for (int r = 0; r < 6; r++) {
-            if (board[r][col] == player) {
-                count++;
-                maxCount = Math.max(maxCount, count);
-            } else {
-                count = 0;
-            }
-        }
+        int vertCount = countDirection(board, row, col, -1, 0) + 
+                        countDirection(board, row, col, 1, 0) + 1;
+        maxCount = Math.max(maxCount, vertCount);
         
         // Check diagonal (positive slope)
-        count = 0;
-        for (int r = 0; r < 6; r++) {
-            for (int c = 0; c < 7; c++) {
-                if (r + c == row + col && board[r][c] == player) {
-                    count++;
-                    maxCount = Math.max(maxCount, count);
-                } else {
-                    count = 0;
-                }
-            }
-        }
+        int diagUpCount = countDirection(board, row, col, -1, -1) + 
+                          countDirection(board, row, col, 1, 1) + 1;
+        maxCount = Math.max(maxCount, diagUpCount);
         
         // Check diagonal (negative slope)
-        count = 0;
-        for (int r = 0; r < 6; r++) {
-            for (int c = 0; c < 7; c++) {
-                if (r - c == row - col && board[r][c] == player) {
-                    count++;
-                    maxCount = Math.max(maxCount, count);
-                } else {
-                    count = 0;
+        int diagDownCount = countDirection(board, row, col, -1, 1) + 
+                            countDirection(board, row, col, 1, -1) + 1;
+        maxCount = Math.max(maxCount, diagDownCount);
+        
+        return maxCount;
+    }
+    
+    // Helper method to count consecutive pieces in a direction
+    private int countDirection(int[][] board, int row, int col, int rowDir, int colDir) {
+        int player = board[row][col];
+        int count = 0;
+        
+        // Move in the specified direction
+        int r = row + rowDir;
+        int c = col + colDir;
+        
+        // Count consecutive pieces of the same player
+        while (r >= 0 && r < 6 && c >= 0 && c < 7 && board[r][c] == player) {
+            count++;
+            r += rowDir;
+            c += colDir;
+        }
+        
+        return count;
+    }
+
+    // Finds if a player can create a potential diagonal threat in the next move
+    private int findDiagonalThreats(int[][] board, int player) {
+        // Check diagonals (positive slope)
+        for (int r = 0; r <= 5; r++) {
+            for (int c = 0; c <= 6; c++) {
+                int count = 0;
+                
+                // Count diagonal up-right (↗)
+                if (r <= 2 && c <= 3) {
+                    for (int i = 0; i < 3; i++) {
+                        if (board[r+i][c+i] == player) {
+                            count++;
+                        } else if (board[r+i][c+i] != 0) {
+                            count = -1; // Blocked by opponent
+                            break;
+                        }
+                    }
+                    
+                    if (count == 2) {
+                        // Check if we can place a piece to complete a threat
+                        for (int i = 0; i < 3; i++) {
+                            int checkRow = r+i;
+                            int checkCol = c+i;
+                            if (board[checkRow][checkCol] == 0) {
+                                // Make sure there's either a piece below or it's the bottom row
+                                if (checkRow == 5 || board[checkRow+1][checkCol] != 0) {
+                                    return checkCol;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Count diagonal down-right (↘)
+                count = 0;
+                if (r >= 3 && c <= 3) {
+                    for (int i = 0; i < 3; i++) {
+                        if (board[r-i][c+i] == player) {
+                            count++;
+                        } else if (board[r-i][c+i] != 0) {
+                            count = -1; // Blocked by opponent
+                            break;
+                        }
+                    }
+                    
+                    if (count == 2) {
+                        // Check if we can place a piece to complete a threat
+                        for (int i = 0; i < 3; i++) {
+                            int checkRow = r-i;
+                            int checkCol = c+i;
+                            if (board[checkRow][checkCol] == 0) {
+                                // Make sure there's either a piece below or it's the bottom row
+                                if (checkRow == 5 || board[checkRow+1][checkCol] != 0) {
+                                    return checkCol;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
         
-        return maxCount;
+        return -1;
     }
 } 
