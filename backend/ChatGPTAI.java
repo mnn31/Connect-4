@@ -18,7 +18,7 @@ public class ChatGPTAI {
     public ChatGPTAI() {
         this.apiKey = loadApiKey();
         if (apiKey == null) {
-            System.out.println("Warning: No API key found. Using random moves only.");
+            System.out.println("Warning: No API key found. Using smart strategy only.");
             usingChatGPT = false;
         }
     }
