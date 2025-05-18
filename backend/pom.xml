@@ -12,29 +12,4 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>ai.djl</groupId>
-            <artifactId>api</artifactId>
-            <version>0.20.0</version>
-        </dependency>
-        <dependency>
-            <groupId>ai.djl.pytorch</groupId>
-            <artifactId>pytorch-engine</artifactId>
-            <version>0.20.0</version>
-        </dependency>
-        <dependency>
-            <groupId>ai.djl.huggingface</groupId>
-            <artifactId>tokenizers</artifactId>
-            <version>0.20.0</version>
-        </dependency>
-    </dependencies>
-
-    <repositories>
-        <repository>
-            <id>djl.ai</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        </repository>
-    </repositories>
 </project> 
