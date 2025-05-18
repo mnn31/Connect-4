@@ -22,6 +22,7 @@ function App() {
   const [winner, setWinner] = useState(0);
   const [error, setError] = useState(null);
   const [isAIMove, setIsAIMove] = useState(false);
+  const [winningPositions, setWinningPositions] = useState([]);
 
   useEffect(() => {
     fetchBoardState();
@@ -31,7 +32,9 @@ function App() {
     try {
       const response = await fetch('http://localhost:8080/board');
       const data = await response.text();
-      const [boardState, gameState] = data.split('|');
+      const parts = data.split('|');
+      const boardState = parts[0];
+      const [isOver, winnerValue] = parts[1].split(',').map(Number);
       
       // Parse board state
       const boardArray = boardState.split(',')
@@ -45,9 +48,22 @@ function App() {
       setBoard(newBoard);
 
       // Parse game state
-      const [isOver, winnerValue] = gameState.split(',').map(Number);
       setGameOver(isOver);
       setWinner(winnerValue);
+
+      // Parse winning positions if they exist
+      if (parts.length > 2 && isOver && winnerValue !== 0) {
+        const positions = parts[2].split(',')
+          .filter(pos => pos !== '')
+          .map(Number);
+        const winningPos = [];
+        for (let i = 0; i < positions.length; i += 2) {
+          winningPos.push([positions[i], positions[i + 1]]);
+        }
+        setWinningPositions(winningPos);
+      } else {
+        setWinningPositions([]);
+      }
     } catch (error) {
       console.error('Error fetching board state:', error);
     }
@@ -72,27 +88,10 @@ function App() {
         throw new Error('Move failed');
       }
 
-      const data = await response.text();
-      const [boardState, gameState] = data.split('|');
-      
-      // Parse board state
-      const boardArray = boardState.split(',')
-        .filter(cell => cell !== '')
-        .map(Number);
-      
-      const newBoard = [];
-      for (let i = 0; i < 6; i++) {
-        newBoard.push(boardArray.slice(i * 7, (i + 1) * 7));
-      }
-      setBoard(newBoard);
-
-      // Parse game state
-      const [isOver, winnerValue] = gameState.split(',').map(Number);
-      setGameOver(isOver);
-      setWinner(winnerValue);
+      await fetchBoardState();
 
       // Only trigger AI move if the game is not over
-      if (!isOver) {
+      if (!gameOver) {
         setIsAIMove(true);
         setTimeout(() => {
           makeAIMove();
@@ -137,24 +136,7 @@ function App() {
           throw new Error('AI move failed');
         }
 
-        const data = await response.text();
-        const [boardState, gameState] = data.split('|');
-        
-        // Parse board state
-        const boardArray = boardState.split(',')
-          .filter(cell => cell !== '')
-          .map(Number);
-        
-        const newBoard = [];
-        for (let i = 0; i < 6; i++) {
-          newBoard.push(boardArray.slice(i * 7, (i + 1) * 7));
-        }
-        setBoard(newBoard);
-
-        // Parse game state
-        const [isOver, winnerValue] = gameState.split(',').map(Number);
-        setGameOver(isOver);
-        setWinner(winnerValue);
+        await fetchBoardState();
       }
     } catch (error) {
       console.error('Error making AI move:', error);
@@ -180,6 +162,7 @@ function App() {
       setGameOver(false);
       setWinner(0);
       setIsAIMove(false);
+      setWinningPositions([]);
     } catch (error) {
       console.error('Error resetting game:', error);
     }
@@ -225,6 +208,7 @@ function App() {
             gameOver={gameOver}
             winner={winner}
             onReset={resetGame}
+            winningPositions={winningPositions}
           />
         </Box>
       </Container>

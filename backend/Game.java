@@ -5,12 +5,14 @@ public class Game {
     private int currentPlayer;
     private boolean gameOver;
     private int winner;
+    private int[][] winningPositions;
 
     public Game() {
         board = new int[ROWS][COLS];
         currentPlayer = 1;
         gameOver = false;
         winner = 0;
+        winningPositions = null;
     }
 
     public boolean makeMove(int col) {
@@ -47,6 +49,9 @@ public class Game {
                 board[row][c + 1] == player &&
                 board[row][c + 2] == player &&
                 board[row][c + 3] == player) {
+                winningPositions = new int[][] {
+                    {row, c}, {row, c + 1}, {row, c + 2}, {row, c + 3}
+                };
                 return true;
             }
         }
@@ -57,6 +62,9 @@ public class Game {
                 board[r + 1][col] == player &&
                 board[r + 2][col] == player &&
                 board[r + 3][col] == player) {
+                winningPositions = new int[][] {
+                    {r, col}, {r + 1, col}, {r + 2, col}, {r + 3, col}
+                };
                 return true;
             }
         }
@@ -68,6 +76,9 @@ public class Game {
                     board[r + 1][c + 1] == player &&
                     board[r + 2][c + 2] == player &&
                     board[r + 3][c + 3] == player) {
+                    winningPositions = new int[][] {
+                        {r, c}, {r + 1, c + 1}, {r + 2, c + 2}, {r + 3, c + 3}
+                    };
                     return true;
                 }
             }
@@ -80,6 +91,9 @@ public class Game {
                     board[r - 1][c + 1] == player &&
                     board[r - 2][c + 2] == player &&
                     board[r - 3][c + 3] == player) {
+                    winningPositions = new int[][] {
+                        {r, c}, {r - 1, c + 1}, {r - 2, c + 2}, {r - 3, c + 3}
+                    };
                     return true;
                 }
             }
@@ -106,6 +120,7 @@ public class Game {
         currentPlayer = 1;
         gameOver = false;
         winner = 0;
+        winningPositions = null;
     }
 
     public boolean isGameOver() {
@@ -114,5 +129,9 @@ public class Game {
 
     public int getWinner() {
         return winner;
+    }
+
+    public int[][] getWinningPositions() {
+        return winningPositions;
     }
 } 

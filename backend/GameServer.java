@@ -86,6 +86,17 @@ public class GameServer {
         response.append(game.isGameOver() ? "1" : "0").append(",");
         response.append(game.getWinner());
         
+        // Add winning positions if game is over
+        if (game.isGameOver() && game.getWinner() != 0) {
+            response.append("|");
+            int[][] winningPositions = game.getWinningPositions();
+            if (winningPositions != null) {
+                for (int[] pos : winningPositions) {
+                    response.append(pos[0]).append(",").append(pos[1]).append(",");
+                }
+            }
+        }
+        
         return response.toString();
     }
 

@@ -11,7 +11,7 @@ const BoardContainer = styled(Paper)(({ theme }) => ({
   overflow: 'visible'
 }));
 
-const Cell = styled(Box)(({ theme, isHovered, isWinning }) => ({
+const Cell = styled(Box)(({ theme, isHovered }) => ({
   width: '60px',
   height: '60px',
   backgroundColor: '#0d47a1',
@@ -26,25 +26,10 @@ const Cell = styled(Box)(({ theme, isHovered, isWinning }) => ({
   '&:hover': {
     backgroundColor: isHovered ? '#1565c0' : '#0d47a1',
     transform: isHovered ? 'scale(1.05)' : 'none',
-  },
-  ...(isWinning && {
-    boxShadow: '0 0 20px rgba(255, 255, 255, 0.8)',
-    animation: 'pulse 1s infinite',
-  }),
-  '@keyframes pulse': {
-    '0%': {
-      boxShadow: '0 0 0 0 rgba(255, 255, 255, 0.4)',
-    },
-    '70%': {
-      boxShadow: '0 0 0 10px rgba(255, 255, 255, 0)',
-    },
-    '100%': {
-      boxShadow: '0 0 0 0 rgba(255, 255, 255, 0)',
-    },
-  },
+  }
 }));
 
-const Piece = styled(Box)(({ theme, player, isFalling }) => ({
+const Piece = styled(Box)(({ theme, player, isFalling, isWinning }) => ({
   width: '50px',
   height: '50px',
   borderRadius: '50%',
@@ -52,6 +37,10 @@ const Piece = styled(Box)(({ theme, player, isFalling }) => ({
   boxShadow: 'inset 0 0 20px rgba(0, 0, 0, 0.3)',
   position: 'relative',
   animation: isFalling ? 'fall 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards' : 'none',
+  ...(isWinning && {
+    animation: 'winPulse 1s infinite',
+    boxShadow: '0 0 20px rgba(255, 255, 255, 0.8)',
+  }),
   '@keyframes fall': {
     '0%': {
       transform: 'translateY(-400px)',
@@ -60,9 +49,20 @@ const Piece = styled(Box)(({ theme, player, isFalling }) => ({
       transform: 'translateY(0)',
     },
   },
+  '@keyframes winPulse': {
+    '0%': {
+      boxShadow: '0 0 0 0 rgba(255, 255, 255, 0.8)',
+    },
+    '70%': {
+      boxShadow: '0 0 20px 10px rgba(255, 255, 255, 0.4)',
+    },
+    '100%': {
+      boxShadow: '0 0 0 0 rgba(255, 255, 255, 0)',
+    },
+  },
 }));
 
-const GameBoard = ({ board, onColumnClick, gameOver, winner, onReset }) => {
+const GameBoard = ({ board, onColumnClick, gameOver, winner, onReset, winningPositions }) => {
   const [hoveredColumn, setHoveredColumn] = React.useState(null);
 
   const handleColumnHover = (column) => {
@@ -81,6 +81,10 @@ const GameBoard = ({ board, onColumnClick, gameOver, winner, onReset }) => {
     }
   };
 
+  const isWinningPosition = (row, col) => {
+    return winningPositions.some(pos => pos[0] === row && pos[1] === col);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
       <BoardContainer elevation={3}>
@@ -91,7 +95,6 @@ const GameBoard = ({ board, onColumnClick, gameOver, winner, onReset }) => {
                 <Cell
                   key={`${rowIndex}-${colIndex}`}
                   isHovered={hoveredColumn === colIndex && !gameOver}
-                  isWinning={gameOver && winner !== 0 && cell === winner}
                   onMouseEnter={() => handleColumnHover(colIndex)}
                   onMouseLeave={handleColumnLeave}
                   onClick={() => handleColumnClick(colIndex)}
@@ -100,6 +103,7 @@ const GameBoard = ({ board, onColumnClick, gameOver, winner, onReset }) => {
                     <Piece 
                       player={cell} 
                       isFalling={true}
+                      isWinning={gameOver && winner !== 0 && isWinningPosition(rowIndex, colIndex)}
                     />
                   )}
                 </Cell>
