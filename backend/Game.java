@@ -27,10 +27,11 @@ public class Game {
                 if (checkWin(row, col)) {
                     gameOver = true;
                     winner = currentPlayer;
-                } else {
-                    // Switch players only if no win
-                    currentPlayer = currentPlayer == 1 ? 2 : 1;
+                    return true;
                 }
+                
+                // Switch players only if no win
+                currentPlayer = currentPlayer == 1 ? 2 : 1;
                 return true;
             }
         }

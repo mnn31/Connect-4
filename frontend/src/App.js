@@ -27,24 +27,6 @@ function App() {
     fetchBoardState();
   }, []);
 
-  // Add effect to handle automatic reset
-  useEffect(() => {
-    let resetTimer;
-    if (gameOver && winner !== 0) {
-      console.log('Game over, setting reset timer...');
-      // Show win message for 2 seconds before resetting
-      resetTimer = setTimeout(async () => {
-        console.log('Resetting game...');
-        await resetGame();
-      }, 2000);
-    }
-    return () => {
-      if (resetTimer) {
-        clearTimeout(resetTimer);
-      }
-    };
-  }, [gameOver, winner]);
-
   const fetchBoardState = async () => {
     try {
       const response = await fetch('http://localhost:8080/board');
@@ -109,7 +91,7 @@ function App() {
       setGameOver(isOver);
       setWinner(winnerValue);
 
-      // If game is not over, trigger AI move after a delay
+      // Only trigger AI move if the game is not over
       if (!isOver) {
         setIsAIMove(true);
         setTimeout(() => {
@@ -122,6 +104,11 @@ function App() {
   };
 
   const makeAIMove = async () => {
+    if (gameOver) {
+      setIsAIMove(false);
+      return;
+    }
+
     try {
       // Find available columns
       const availableColumns = [];
@@ -178,7 +165,6 @@ function App() {
 
   const resetGame = async () => {
     try {
-      console.log('Resetting game...');
       const response = await fetch('http://localhost:8080/reset', {
         method: 'POST',
         headers: {
@@ -201,7 +187,7 @@ function App() {
 
   const getGameStatus = () => {
     if (gameOver && winner !== 0) {
-      return winner === 1 ? "You Win! 🎉" : "AI Wins! 🤖";
+      return winner === 1 ? "You Won! 🎉" : "AI Won! 🤖";
     }
     return isAIMove ? "AI is thinking... 🤔" : "Your turn - Drop a piece! 👇";
   };
