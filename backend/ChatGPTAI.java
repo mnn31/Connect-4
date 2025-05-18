@@ -41,6 +41,7 @@ public class ChatGPTAI {
 
     public int getMove(int[][] board) {
         if (!usingChatGPT) {
+            System.out.println("\n🧠 USING SMART AI STRATEGY (ChatGPT disabled)\n");
             return getStrategicMove(board);
         }
 
@@ -48,11 +49,14 @@ public class ChatGPTAI {
             String boardState = convertBoardToInput(board);
             String prompt = createPrompt(boardState);
             
+            System.out.println("\n🔄 ATTEMPTING TO USE CHATGPT API...\n");
             String response = callChatGPT(prompt);
-            return processResponse(response);
+            int move = processResponse(response);
+            System.out.println("\n✅ MOVE SUCCESSFULLY MADE BY CHATGPT API\n");
+            return move;
         } catch (Exception e) {
             System.err.println("ChatGPT API call failed: " + e.getMessage());
-            System.out.println("Falling back to strategic moves");
+            System.out.println("\n❌ API CALL FAILED - FALLING BACK TO SMART AI STRATEGY\n");
             usingChatGPT = false;
             return getStrategicMove(board);
         }
@@ -131,6 +135,8 @@ public class ChatGPTAI {
                                       .getString("content")
                                       .trim();
             
+            System.out.println("ChatGPT suggested move: " + content);
+            
             int move = Integer.parseInt(content);
             if (move >= 0 && move <= 6) {
                 return move;
@@ -139,6 +145,7 @@ public class ChatGPTAI {
             System.err.println("Invalid response format: " + response);
         }
         
+        System.out.println("\n⚠️ INVALID CHATGPT RESPONSE - USING SMART AI INSTEAD\n");
         return getStrategicMove(null);
     }
 
@@ -153,6 +160,8 @@ public class ChatGPTAI {
     }
 
     private int getStrategicMove(int[][] board) {
+        System.out.println("SMART AI STRATEGY: Analyzing board position...");
+        
         // First, check for winning moves
         for (int col = 0; col < 7; col++) {
             if (isValidMove(board, col)) {
@@ -160,6 +169,7 @@ public class ChatGPTAI {
                 board[row][col] = 2; // Try AI's move
                 if (checkWin(board, row, col)) {
                     board[row][col] = 0; // Undo move
+                    System.out.println("SMART AI STRATEGY: Found winning move at column " + col);
                     return col;
                 }
                 board[row][col] = 0; // Undo move
@@ -173,6 +183,7 @@ public class ChatGPTAI {
                 board[row][col] = 1; // Try opponent's move
                 if (checkWin(board, row, col)) {
                     board[row][col] = 0; // Undo move
+                    System.out.println("SMART AI STRATEGY: Blocking opponent's win at column " + col);
                     return col;
                 }
                 board[row][col] = 0; // Undo move
@@ -182,12 +193,14 @@ public class ChatGPTAI {
         // Check for potential diagonal threats (player is about to create a diagonal 3-in-a-row)
         int blockDiagonalCol = findDiagonalThreats(board, 1);
         if (blockDiagonalCol != -1) {
+            System.out.println("SMART AI STRATEGY: Blocking diagonal threat at column " + blockDiagonalCol);
             return blockDiagonalCol;
         }
 
         // Check for potential diagonal opportunities for AI
         int createDiagonalCol = findDiagonalThreats(board, 2);
         if (createDiagonalCol != -1) {
+            System.out.println("SMART AI STRATEGY: Creating diagonal opportunity at column " + createDiagonalCol);
             return createDiagonalCol;
         }
 
@@ -223,6 +236,7 @@ public class ChatGPTAI {
         }
         
         if (bestCol != -1) {
+            System.out.println("SMART AI STRATEGY: Creating opportunity or blocking setup at column " + bestCol + " (score: " + bestScore + ")");
             return bestCol;
         }
 
@@ -235,11 +249,14 @@ public class ChatGPTAI {
         }
         
         if (availableColumns.isEmpty()) {
+            System.out.println("SMART AI STRATEGY: No valid moves available!");
             return -1;
         }
         
         int randomIndex = (int) (Math.random() * availableColumns.size());
-        return availableColumns.get(randomIndex);
+        int randomCol = availableColumns.get(randomIndex);
+        System.out.println("SMART AI STRATEGY: No clear strategic move, choosing random column " + randomCol);
+        return randomCol;
     }
 
     private boolean isValidMove(int[][] board, int col) {

@@ -14,6 +14,12 @@ public class GameServer {
 
     public GameServer() {
         game = new ChatGPTGame();
+        System.out.println("\n--------------------------------------------------");
+        System.out.println("🎮 CONNECT 4 GAME SERVER");
+        System.out.println("--------------------------------------------------");
+        System.out.println("API Status: The system will attempt to use ChatGPT API first");
+        System.out.println("           If API call fails, it will fall back to Smart AI");
+        System.out.println("--------------------------------------------------\n");
     }
 
     public void start() throws IOException {
@@ -157,15 +163,19 @@ public class GameServer {
                 return;
             }
             
-            System.out.println("AI move request received");
+            System.out.println("\n🤖 AI MOVE REQUEST RECEIVED 🤖");
+            System.out.println("--------------------------------------------------");
+            
             int aiMove = game.getAIMove();
-            System.out.println("AI will move in column: " + aiMove);
+            System.out.println("--------------------------------------------------");
+            System.out.println("AI selected column: " + aiMove);
             
             boolean validMove = game.makeMove(aiMove);
-            System.out.println("AI move valid: " + validMove);
+            System.out.println("Move valid: " + validMove);
             
             String response = getBoardState();
-            System.out.println("AI move response: " + response);
+            System.out.println("AI move completed. New board state ready to send.");
+            System.out.println("--------------------------------------------------\n");
             
             exchange.getResponseHeaders().set("Content-Type", "text/plain");
             exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
@@ -176,7 +186,7 @@ public class GameServer {
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
             }
-            System.out.println("AI move response sent");
+            System.out.println("AI move response sent to client");
         }
     }
 
