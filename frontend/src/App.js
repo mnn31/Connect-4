@@ -28,13 +28,33 @@ function App() {
     fetchBoardState();
   }, []);
 
+  // Add another useEffect to update status text when AI is thinking
+  useEffect(() => {
+    // This just ensures the UI updates when the AI is thinking
+  }, [isAIMove]);
+
   const fetchBoardState = async () => {
     try {
+      console.log("Fetching board state...");
       const response = await fetch('http://localhost:8080/board');
       const data = await response.text();
+      console.log("Board data received:", data);
+      
       const parts = data.split('|');
       const boardState = parts[0];
-      const [isOver, winnerValue] = parts[1].split(',').map(Number);
+      
+      // Parse game state - be careful with the format!
+      let isOver = 0;
+      let winnerValue = 0;
+      
+      if (parts.length > 1) {
+        const gameStateParts = parts[1].split(',');
+        if (gameStateParts.length >= 2) {
+          isOver = parseInt(gameStateParts[0]);
+          winnerValue = parseInt(gameStateParts[1]);
+          console.log(`Game state parsed: isOver=${isOver}, winner=${winnerValue}`);
+        }
+      }
       
       // Parse board state
       const boardArray = boardState.split(',')
@@ -48,34 +68,72 @@ function App() {
       setBoard(newBoard);
 
       // Parse game state
-      setGameOver(isOver);
+      const gameIsOver = isOver === 1;
+      setGameOver(gameIsOver);
       setWinner(winnerValue);
+      console.log("Game state updated: gameOver =", gameIsOver, "winner =", winnerValue);
 
       // Parse winning positions if they exist
-      if (parts.length > 2 && isOver && winnerValue !== 0) {
+      if (parts.length > 2 && isOver === 1 && winnerValue !== 0) {
         const positions = parts[2].split(',')
           .filter(pos => pos !== '')
           .map(Number);
         const winningPos = [];
         for (let i = 0; i < positions.length; i += 2) {
-          winningPos.push([positions[i], positions[i + 1]]);
+          if (i + 1 < positions.length) {
+            winningPos.push([positions[i], positions[i + 1]]);
+          }
         }
         setWinningPositions(winningPos);
       } else {
         setWinningPositions([]);
       }
+      
+      // Return whether the game is over
+      return gameIsOver;
     } catch (error) {
       console.error('Error fetching board state:', error);
+      return false;
     }
   };
 
   const makeMove = async (column) => {
-    if (gameOver || isAIMove) return;
+    if (gameOver || isAIMove) {
+      console.log("Move rejected: gameOver =", gameOver, "isAIMove =", isAIMove);
+      return;
+    }
+
+    // Immediately set isAIMove to true to prevent double clicks
+    setIsAIMove(true);
+    console.log(`Player making move in column ${column}`);
 
     try {
+      // Update board preview locally for immediate feedback
+      const newBoard = JSON.parse(JSON.stringify(board)); // Deep copy
+      let validMove = false;
+      // Find lowest empty row in selected column
+      for (let row = 5; row >= 0; row--) {
+        if (newBoard[row][column] === 0) {
+          // Create a copy of the board and place the player's piece
+          newBoard[row][column] = 1; // Player is 1
+          setBoard(newBoard);
+          validMove = true;
+          console.log(`Player piece placed at row ${row}, column ${column}`);
+          break;
+        }
+      }
+
+      if (!validMove) {
+        console.log("Invalid move - column is full");
+        setIsAIMove(false);
+        return;
+      }
+
+      // Now send the move to the server
       const formData = new URLSearchParams();
       formData.append('column', column);
 
+      console.log("Sending move to server...");
       const response = await fetch('http://localhost:8080/move', {
         method: 'POST',
         headers: {
@@ -88,42 +146,55 @@ function App() {
         throw new Error('Move failed');
       }
 
-      await fetchBoardState();
+      // Get latest board state from server and check if game is over
+      const isGameOver = await fetchBoardState();
+      console.log("After player move, gameOver =", isGameOver);
 
-      // Only trigger AI move if the game is not over
-      if (!gameOver) {
-        setIsAIMove(true);
-        setTimeout(() => {
-          makeAIMove();
-        }, 1000);
+      // Check if the game is over after player's move
+      if (isGameOver) {
+        console.log("Game over after player move");
+        setIsAIMove(false);
+        return;
       }
+
+      // Make AI move with a small delay
+      console.log("Triggering AI move in 1 second...");
+      setTimeout(makeAIMove, 1000);
     } catch (error) {
       console.error('Error making move:', error);
+      // Refresh board state to correct any inconsistencies
+      fetchBoardState();
+      setIsAIMove(false);
     }
   };
 
   const makeAIMove = async () => {
-    if (gameOver) {
-      setIsAIMove(false);
-      return;
-    }
-
+    console.log("🤖 AI MAKING MOVE - START");
+    
     try {
-      const response = await fetch('http://localhost:8080/ai-move', {
+      const aiResponse = await fetch('http://localhost:8080/ai-move', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       });
 
-      if (!response.ok) {
-        throw new Error('AI move failed');
+      console.log("AI move response status:", aiResponse.status);
+      
+      if (!aiResponse.ok) {
+        throw new Error(`AI move failed with status ${aiResponse.status}`);
       }
+      
+      const responseText = await aiResponse.text();
+      console.log("AI move response body:", responseText);
 
+      // Update the board
       await fetchBoardState();
     } catch (error) {
-      console.error('Error making AI move:', error);
+      console.error('❌ Error making AI move:', error);
+      await fetchBoardState();
     } finally {
+      console.log("🤖 AI MAKING MOVE - END");
       setIsAIMove(false);
     }
   };

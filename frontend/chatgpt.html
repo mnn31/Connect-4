@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect 4 - ChatGPT AI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(7, 60px);
+            gap: 5px;
+            background-color: #2196F3;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            background-color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .cell:hover {
+            background-color: #e3f2fd;
+        }
+
+        .cell.player1 {
+            background-color: #f44336;
+        }
+
+        .cell.player2 {
+            background-color: #ffeb3b;
+        }
+
+        .cell.winning {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #333;
+        }
+
+        #reset {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 1.1em;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #reset:hover {
+            background-color: #45a049;
+        }
+
+        .thinking {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Connect 4 - ChatGPT AI</h1>
+    <div id="board"></div>
+    <div id="status">Your turn!</div>
+    <button id="reset">New Game</button>
+
+    <script>
+        const BOARD_ROWS = 6;
+        const BOARD_COLS = 7;
+        const SERVER_URL = 'http://localhost:8081';
+        let gameBoard = Array(BOARD_ROWS).fill().map(() => Array(BOARD_COLS).fill(0));
+        let isGameOver = false;
+        let isThinking = false;
+
+        function createBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            
+            for (let row = 0; row < BOARD_ROWS; row++) {
+                for (let col = 0; col < BOARD_COLS; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', () => makeMove(col));
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function updateBoard() {
+            const cells = document.getElementsByClassName('cell');
+            for (let row = 0; row < BOARD_ROWS; row++) {
+                for (let col = 0; col < BOARD_COLS; col++) {
+                    const cell = cells[row * BOARD_COLS + col];
+                    cell.className = 'cell';
+                    if (gameBoard[row][col] === 1) {
+                        cell.classList.add('player1');
+                    } else if (gameBoard[row][col] === 2) {
+                        cell.classList.add('player2');
+                    }
+                }
+            }
+        }
+
+        async function makeMove(col) {
+            if (isGameOver || isThinking) return;
+
+            try {
+                const response = await fetch(`${SERVER_URL}/move`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `column=${col}`
+                });
+
+                if (!response.ok) {
+                    throw new Error('Invalid move');
+                }
+
+                const data = await response.text();
+                updateGameState(data);
+
+                if (!isGameOver) {
+                    await makeAIMove();
+                }
+            } catch (error) {
+                console.error('Error making move:', error);
+            }
+        }
+
+        async function makeAIMove() {
+            if (isGameOver) return;
+
+            isThinking = true;
+            document.getElementById('status').textContent = 'AI is thinking...';
+            document.getElementById('board').classList.add('thinking');
+
+            try {
+                const response = await fetch(`${SERVER_URL}/ai-move`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error('AI move failed');
+                }
+
+                const data = await response.text();
+                updateGameState(data);
+            } catch (error) {
+                console.error('Error making AI move:', error);
+            } finally {
+                isThinking = false;
+                document.getElementById('board').classList.remove('thinking');
+            }
+        }
+
+        function updateGameState(data) {
+            const [boardData, gameState, winningPositions] = data.split('|');
+            
+            // Update board
+            const values = boardData.split(',').map(Number);
+            for (let row = 0; row < BOARD_ROWS; row++) {
+                for (let col = 0; col < BOARD_COLS; col++) {
+                    gameBoard[row][col] = values[row * BOARD_COLS + col];
+                }
+            }
+            updateBoard();
+
+            // Update game state
+            const [isOver, winner] = gameState.split(',').map(Number);
+            isGameOver = isOver === 1;
+
+            // Update status
+            if (isGameOver) {
+                if (winner === 1) {
+                    document.getElementById('status').textContent = 'You won!';
+                } else if (winner === 2) {
+                    document.getElementById('status').textContent = 'AI won!';
+                } else {
+                    document.getElementById('status').textContent = 'Game ended in a draw!';
+                }
+            } else {
+                document.getElementById('status').textContent = 'Your turn!';
+            }
+
+            // Highlight winning positions
+            if (winningPositions) {
+                const positions = winningPositions.split(',').map(Number);
+                for (let i = 0; i < positions.length; i += 2) {
+                    const row = positions[i];
+                    const col = positions[i + 1];
+                    const cell = document.getElementsByClassName('cell')[row * BOARD_COLS + col];
+                    cell.classList.add('winning');
+                }
+            }
+        }
+
+        async function resetGame() {
+            try {
+                const response = await fetch(`${SERVER_URL}/reset`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to reset game');
+                }
+
+                const data = await response.text();
+                isGameOver = false;
+                updateGameState(data);
+            } catch (error) {
+                console.error('Error resetting game:', error);
+            }
+        }
+
+        document.getElementById('reset').addEventListener('click', resetGame);
+        createBoard();
+    </script>
+</body>
+</html> 
