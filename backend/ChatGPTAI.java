@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.io.FileInputStream;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -18,23 +21,60 @@ public class ChatGPTAI {
     public ChatGPTAI() {
         this.apiKey = loadApiKey();
         if (apiKey == null) {
-            System.out.println("Warning: No API key found. Using smart strategy only.");
+            System.out.println("⚠️ WARNING: No API key found. Using smart strategy only.");
             usingChatGPT = false;
+        } else {
+            System.out.println("✅ API KEY LOADED SUCCESSFULLY (Length: " + apiKey.length() + " characters)");
+            System.out.println("   First 5 chars: " + apiKey.substring(0, Math.min(5, apiKey.length())));
+            System.out.println("   Last 5 chars: " + apiKey.substring(Math.max(0, apiKey.length() - 5)));
         }
     }
 
     private String loadApiKey() {
         try {
-            Properties props = new Properties();
-            props.load(new FileInputStream("../.env"));
-            String key = props.getProperty("OPENAI_API_KEY");
-            if (key == null || key.trim().isEmpty()) {
-                System.out.println("Warning: API key is empty in .env file");
-                return null;
+            // First try loading with Properties
+            try {
+                Properties props = new Properties();
+                props.load(new FileInputStream("../.env"));
+                String key = props.getProperty("OPENAI_API_KEY");
+                if (key != null && !key.trim().isEmpty()) {
+                    return key.trim().replaceAll("\\s+", ""); // Remove any whitespace
+                }
+            } catch (Exception e) {
+                System.out.println("⚠️ Could not load API key with Properties: " + e.getMessage());
             }
-            return key.trim();
+            
+            // If that fails, try reading file directly
+            System.out.println("🔄 Attempting alternative API key loading method...");
+            File envFile = new File("../.env");
+            if (envFile.exists()) {
+                List<String> lines = Files.readAllLines(Paths.get("../.env"));
+                StringBuilder keyBuilder = new StringBuilder();
+                boolean foundKey = false;
+                
+                for (String line : lines) {
+                    if (line.startsWith("OPENAI_API_KEY=")) {
+                        keyBuilder.append(line.substring("OPENAI_API_KEY=".length()));
+                        foundKey = true;
+                    } else if (foundKey) {
+                        keyBuilder.append(line.trim());
+                    }
+                }
+                
+                String key = keyBuilder.toString().trim();
+                if (!key.isEmpty()) {
+                    System.out.println("📝 API key loaded from .env file with direct reading method");
+                    return key.replaceAll("\\s+", ""); // Remove any whitespace
+                }
+            } else {
+                System.out.println("❌ .env file not found at: " + envFile.getAbsolutePath());
+            }
+            
+            System.out.println("❌ Failed to load API key from .env file");
+            return null;
         } catch (Exception e) {
-            System.err.println("Failed to load API key: " + e.getMessage());
+            System.err.println("❌ Failed to load API key: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }
@@ -93,8 +133,9 @@ public class ChatGPTAI {
         requestBody.put("temperature", 0.2);
         requestBody.put("max_tokens", 100);
 
-        System.out.println("Sending request to ChatGPT API...");
-        System.out.println("Prompt: " + prompt);
+        System.out.println("📤 Sending request to ChatGPT API...");
+        System.out.println("🔑 Using API key starting with: " + apiKey.substring(0, Math.min(10, apiKey.length())) + "...");
+        System.out.println("📝 Prompt: " + prompt);
 
         try (OutputStream os = conn.getOutputStream()) {
             byte[] input = requestBody.toString().getBytes("utf-8");
@@ -102,6 +143,8 @@ public class ChatGPTAI {
         }
 
         int responseCode = conn.getResponseCode();
+        System.out.println("🔢 API Response Code: " + responseCode);
+        
         if (responseCode != 200) {
             String errorResponse = "";
             try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getErrorStream(), "utf-8"))) {
@@ -110,8 +153,19 @@ public class ChatGPTAI {
                     errorResponse += responseLine;
                 }
             }
-            System.err.println("API Error Response: " + errorResponse);
-            throw new Exception("API returned error code: " + responseCode + " - " + errorResponse);
+            System.err.println("❌ API ERROR RESPONSE: " + errorResponse);
+            
+            // Provide more detailed error information based on response code
+            switch (responseCode) {
+                case 401:
+                    throw new Exception("API Authentication Error (401): Invalid API key");
+                case 429:
+                    throw new Exception("Rate Limit Exceeded (429): You have exceeded your quota or rate limit");
+                case 500:
+                    throw new Exception("Server Error (500): OpenAI server error");
+                default:
+                    throw new Exception("API returned error code: " + responseCode + " - " + errorResponse);
+            }
         }
 
         StringBuilder response = new StringBuilder();
@@ -122,7 +176,7 @@ public class ChatGPTAI {
             }
         }
 
-        System.out.println("Received response from ChatGPT API");
+        System.out.println("✅ Received response from ChatGPT API");
         return response.toString();
     }
 

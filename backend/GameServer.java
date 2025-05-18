@@ -163,30 +163,43 @@ public class GameServer {
                 return;
             }
             
-            System.out.println("\n🤖 AI MOVE REQUEST RECEIVED 🤖");
-            System.out.println("--------------------------------------------------");
+            System.out.println("\n🤖🤖🤖 AI MOVE REQUEST RECEIVED 🤖🤖🤖");
+            System.out.println("==================================================");
             
-            int aiMove = game.getAIMove();
-            System.out.println("--------------------------------------------------");
-            System.out.println("AI selected column: " + aiMove);
-            
-            boolean validMove = game.makeMove(aiMove);
-            System.out.println("Move valid: " + validMove);
-            
-            String response = getBoardState();
-            System.out.println("AI move completed. New board state ready to send.");
-            System.out.println("--------------------------------------------------\n");
-            
-            exchange.getResponseHeaders().set("Content-Type", "text/plain");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
-            
-            exchange.sendResponseHeaders(validMove ? 200 : 400, response.length());
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
+            try {
+                System.out.println("Getting AI move from game...");
+                int aiMove = game.getAIMove();
+                System.out.println("AI selected column: " + aiMove);
+                
+                boolean validMove = false;
+                if (aiMove != -1) {
+                    System.out.println("Attempting to make AI move in column " + aiMove);
+                    validMove = game.makeMove(aiMove);
+                    System.out.println("AI move valid: " + validMove);
+                } else {
+                    System.out.println("AI returned invalid move -1!");
+                }
+                
+                String response = getBoardState();
+                System.out.println("AI move completed. Sending board state to client:");
+                System.out.println(response);
+                System.out.println("==================================================\n");
+                
+                exchange.getResponseHeaders().set("Content-Type", "text/plain");
+                exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+                exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
+                
+                exchange.sendResponseHeaders(validMove ? 200 : 400, response.length());
+                try (OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes());
+                }
+                System.out.println("AI move response sent to client");
+            } catch (Exception e) {
+                System.out.println("❌ ERROR PROCESSING AI MOVE: " + e.getMessage());
+                e.printStackTrace();
+                sendResponse(exchange, "AI move failed: " + e.getMessage(), 500);
             }
-            System.out.println("AI move response sent to client");
         }
     }
 
