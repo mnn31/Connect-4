@@ -13,6 +13,37 @@ import java.nio.file.Paths;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
+/**
+ * Connect 4 AI Implementation
+ * ---------------------------
+ * 
+ * This class implements the AI for the Connect 4 game. It has two modes:
+ * 
+ * 1. ChatGPT Mode: If an OpenAI API key is available, it will attempt to use the
+ *    ChatGPT API to make AI moves. This is optional and requires a valid API key.
+ * 
+ * 2. Smart AI Mode: A custom-built strategic algorithm that analyzes the game board
+ *    and makes intelligent moves. This is used when no API key is available or when
+ *    API calls fail.
+ * 
+ * How the Smart AI Works:
+ * -----------------------
+ * The AI is a hand-coded strategic algorithm (not a neural network or ML model).
+ * It makes decisions in this priority order:
+ * 
+ * 1. Look for an immediate winning move
+ * 2. Block opponent's winning move
+ * 3. Look for diagonal threats (both creating them and blocking them)
+ * 4. Score all possible moves based on strategic value
+ *    - Prefer center columns
+ *    - Connect with existing pieces
+ *    - Block opponent setups
+ * 
+ * The Smart AI doesn't use any external libraries for decision making - it's
+ * entirely implemented in this file with custom algorithms. The recent
+ * improvements focus on enhancing diagonal threat detection, which is a common
+ * blind spot for Connect 4 players.
+ */
 public class ChatGPTAI {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
     private final String apiKey;

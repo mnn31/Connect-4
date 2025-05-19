@@ -1,91 +1,69 @@
-# Connect 4 Game - AP Computer Science A Final Project
+# Connect 4 Game with Smart AI
 
 ## Overview
-This project implements a classic Connect 4 game with a modern web interface and AI opponent. The game is built using a Java backend for game logic and a React frontend for the user interface. The project demonstrates the application of object-oriented programming principles, data structures, algorithms, and web development concepts learned in AP Computer Science A.
 
-### Problem Statement
-Traditional board games often lack engaging digital interfaces and intelligent opponents. This project aims to create an interactive Connect 4 game that combines classic gameplay with modern technology, providing an engaging user experience while demonstrating technical proficiency in software development.
+This is a Connect 4 game with a React frontend and Java backend. The game features a custom-built AI opponent that makes strategic decisions without using external machine learning libraries.
 
-### Proposed Solution
-A web-based Connect 4 game featuring:
-- Clean, responsive user interface
-- Real-time game state management
-- AI opponent with random move generation
-- Win detection and automatic game reset
-- Smooth animations and visual feedback
+## Game Components
 
-## Objectives
-1. Implement a fully functional Connect 4 game with proper win detection
-2. Create an intuitive and visually appealing user interface
-3. Develop a reliable client-server architecture
-4. Implement basic AI opponent functionality
-5. Ensure smooth gameplay with proper error handling
-6. Demonstrate understanding of key AP CS A concepts
+1. **React Frontend**: Modern web interface for playing the game
+2. **Java Backend**: Game server that handles game logic and AI
+3. **Smart AI System**: Custom-built strategic AI algorithm
 
-### Key Success Metrics
-- Successful win detection in all directions (horizontal, vertical, diagonal)
-- Responsive UI with smooth animations
-- Reliable game state management
-- Error-free gameplay experience
-- Clean, maintainable code structure
+## How the AI Works
 
-## Strategy
+Our Connect 4 AI is **entirely hand-coded** - we did not use ChatGPT to generate the moves during gameplay (although we can try to use it if you provide an API key).
 
-### Approach
-1. **Backend Development**
-   - Implement core game logic in Java
-   - Create HTTP server for game state management
-   - Develop win detection algorithms
-   - Implement AI move generation
+### AI Explanation for Beginners
 
-2. **Frontend Development**
-   - Design responsive game board
-   - Implement piece dropping animations
-   - Create game state display
-   - Add win detection visual feedback
+The AI in this game works like a chess player thinking ahead:
 
-3. **Integration**
-   - Connect frontend and backend
-   - Implement real-time game state updates
-   - Add error handling and validation
-   - Test and debug gameplay
+1. **Looking for Wins**: First, it checks if it can win right now
+2. **Blocking Your Wins**: Then it checks if you're about to win and blocks you
+3. **Finding Diagonal Threats**: It pays special attention to diagonal lines (which are harder to spot)
+4. **Strategic Planning**: It evaluates every possible move by:
+   - Counting how many pieces it would connect
+   - Preferring the center columns (which offer more winning opportunities)
+   - Blocking your potential setups
+   
+### Technical Details
 
-### Target Audience
-- AP Computer Science A students
-- Casual gamers looking for a quick, engaging game
-- Educational institutions teaching game development
-- Age range: 12+ (suitable for all ages)
-- Technical requirements: Modern web browser
+- The AI is coded in Java (in the `ChatGPTAI.java` file)
+- It uses a scoring system to evaluate potential moves
+- It includes special detection for diagonal threats
+- The code was **written from scratch**, not imported from an external source
+- It does NOT use neural networks or machine learning techniques
 
-### Measurement
-1. **Technical Metrics**
-   - Code quality and organization
-   - Algorithm efficiency
-   - Error handling coverage
-   - Response time of game actions
+## How to Run the Game
 
-2. **User Experience Metrics**
-   - Game responsiveness
-   - Animation smoothness
-   - UI intuitiveness
-   - Win detection accuracy
+1. Start the backend server:
+   ```
+   cd backend
+   javac -cp json-20210307.jar *.java
+   java -cp ".:json-20210307.jar" GameServer
+   ```
 
-3. **Project Success Metrics**
-   - Completion of all core features
-   - Clean, documented code
-   - Successful demonstration of AP CS A concepts
-   - Positive user feedback
+2. Start the React frontend:
+   ```
+   cd frontend
+   npm start
+   ```
 
-## Technical Implementation
-- **Backend**: Java with HTTP server
-- **Frontend**: React with Material-UI
-- **Game Logic**: Object-oriented design
-- **Data Structures**: 2D arrays for board representation
-- **Algorithms**: Win detection, AI move generation
+3. Open your browser to `http://localhost:3000`
 
-## Future Enhancements
-1. Improved AI with strategy implementation
-2. Multiplayer support
-3. Score tracking and statistics
-4. Customizable game settings
-5. Mobile responsiveness improvements
+## Using ChatGPT API (Optional)
+
+The game can attempt to use OpenAI's ChatGPT API to make moves if you provide an API key:
+
+1. Create a `.env` file in the project root
+2. Add your API key: `OPENAI_API_KEY=your_key_here`
+
+If the API call fails (due to quota limits, etc.), the game will automatically fall back to the built-in Smart AI.
+
+## Recent Improvements
+
+The AI was recently enhanced to better detect and respond to diagonal threats - one of the most common ways players win in Connect 4.
+
+## Project Development
+
+This project was developed as part of an APCS course to demonstrate game development concepts and basic AI strategy implementation.
