@@ -244,27 +244,30 @@ public class ChatGPTAI {
             }
         }
 
-        // Check for potential diagonal threats (player is about to create a diagonal 3-in-a-row)
+        // Check for potential diagonal threats from player with 3 in a row (highest priority for diagonal threats)
         int blockDiagonalCol = findDiagonalThreats(board, 1);
         if (blockDiagonalCol != -1) {
             System.out.println("SMART AI STRATEGY: Blocking diagonal threat at column " + blockDiagonalCol);
             return blockDiagonalCol;
         }
 
-        // Check for potential diagonal opportunities for AI
+        // Check for potential diagonal opportunities for AI with 3 in a row
         int createDiagonalCol = findDiagonalThreats(board, 2);
         if (createDiagonalCol != -1) {
             System.out.println("SMART AI STRATEGY: Creating diagonal opportunity at column " + createDiagonalCol);
             return createDiagonalCol;
         }
 
-        // Try to create opportunities (look for moves that create 3 in a row)
+        // Now look for 2 in a row setups with higher priority on diagonals
         int bestCol = -1;
         int bestScore = -1;
         
+        // Analyze each possible move
         for (int col = 0; col < 7; col++) {
             if (isValidMove(board, col)) {
                 int row = getNextRow(board, col);
+                
+                // Score our own move
                 board[row][col] = 2; // Try AI's move
                 
                 // Get consecutive counts in all directions
@@ -276,9 +279,22 @@ public class ChatGPTAI {
                 
                 // Check if this move blocks opponent's potential setup
                 board[row][col] = 0;  // Undo move
+                
+                // Specifically check diagonals for player threats
+                // This gives extra priority to diagonal threats
+                boolean blocksDiagonal = false;
                 board[row][col] = 1;  // Simulate player move here
+                int diagonalThreatUpRight = countDirection(board, row, col, -1, 1) + countDirection(board, row, col, 1, -1) + 1;
+                int diagonalThreatUpLeft = countDirection(board, row, col, -1, -1) + countDirection(board, row, col, 1, 1) + 1;
+                if (diagonalThreatUpRight >= 3 || diagonalThreatUpLeft >= 3) {
+                    score += 10;  // Very high priority to blocking diagonal threats
+                    blocksDiagonal = true;
+                    System.out.println("SMART AI STRATEGY: Detected potential diagonal setup at column " + col);
+                }
+                
+                // Check overall opponent power at this position
                 int opponentScore = countConsecutive(board, row, col);
-                if (opponentScore >= 3) score += 5;  // Higher priority to blocking potential wins
+                if (opponentScore >= 3 && !blocksDiagonal) score += 5;  // Higher priority to blocking potential wins
                 
                 board[row][col] = 0;  // Undo move
                 
@@ -305,6 +321,15 @@ public class ChatGPTAI {
         if (availableColumns.isEmpty()) {
             System.out.println("SMART AI STRATEGY: No valid moves available!");
             return -1;
+        }
+        
+        // Prefer the center columns to edge columns for random choices
+        int[] columnPreference = {3, 2, 4, 1, 5, 0, 6}; // Center to edges
+        for (int preferredCol : columnPreference) {
+            if (availableColumns.contains(preferredCol)) {
+                System.out.println("SMART AI STRATEGY: No clear strategic move, choosing preferred column " + preferredCol);
+                return preferredCol;
+            }
         }
         
         int randomIndex = (int) (Math.random() * availableColumns.size());
@@ -453,6 +478,14 @@ public class ChatGPTAI {
                             }
                         }
                     }
+
+                    // Also check for a potential 4th piece to complete diagonal win
+                    if (count == 2 && r+3 < 6 && c+3 < 7 && board[r+3][c+3] == 0) {
+                        // Check if the position is playable (has support below)
+                        if (r+3 == 5 || board[r+4][c+3] != 0) {
+                            return c+3;
+                        }
+                    }
                 }
                 
                 // Count diagonal down-right (↘)
@@ -476,6 +509,47 @@ public class ChatGPTAI {
                                 // Make sure there's either a piece below or it's the bottom row
                                 if (checkRow == 5 || board[checkRow+1][checkCol] != 0) {
                                     return checkCol;
+                                }
+                            }
+                        }
+                    }
+
+                    // Also check for a potential 4th piece to complete diagonal win
+                    if (count == 2 && r-3 >= 0 && c+3 < 7 && board[r-3][c+3] == 0) {
+                        // Check if the position is playable (has support below)
+                        if (r-3 == 5 || board[r-2][c+3] != 0) {
+                            return c+3;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Additional check for 3-in-a-row diagonals that need immediate blocking
+        for (int r = 0; r < 6; r++) {
+            for (int c = 0; c < 7; c++) {
+                if (board[r][c] == player) {
+                    // Check up-right diagonal
+                    if (r >= 2 && c <= 3) {
+                        if (board[r-1][c+1] == player && board[r-2][c+2] == player) {
+                            // Check if fourth position is open and playable
+                            if (r-3 >= 0 && c+3 < 7 && board[r-3][c+3] == 0) {
+                                if (r-3 == 5 || board[r-2][c+3] != 0) {
+                                    System.out.println("SMART AI STRATEGY: Detected 3-in-a-row diagonal threat at column " + (c+3));
+                                    return c+3;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Check down-right diagonal
+                    if (r <= 2 && c <= 3) {
+                        if (board[r+1][c+1] == player && board[r+2][c+2] == player) {
+                            // Check if fourth position is open and playable
+                            if (r+3 < 6 && c+3 < 7 && board[r+3][c+3] == 0) {
+                                if (r+3 == 5 || board[r+4][c+3] != 0) {
+                                    System.out.println("SMART AI STRATEGY: Detected 3-in-a-row diagonal threat at column " + (c+3));
+                                    return c+3;
                                 }
                             }
                         }
