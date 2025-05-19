@@ -74,17 +74,25 @@ function App() {
       console.log("Game state updated: gameOver =", gameIsOver, "winner =", winnerValue);
 
       // Parse winning positions if they exist
-      if (parts.length > 2 && isOver === 1 && winnerValue !== 0) {
-        const positions = parts[2].split(',')
-          .filter(pos => pos !== '')
-          .map(Number);
-        const winningPos = [];
-        for (let i = 0; i < positions.length; i += 2) {
-          if (i + 1 < positions.length) {
-            winningPos.push([positions[i], positions[i + 1]]);
+      if (parts.length > 2) {
+        if (parts[2] === "draw") {
+          console.log("Game ended in a draw");
+          // Keep winningPositions empty for a draw
+          setWinningPositions([]);
+        } else if (isOver === 1 && winnerValue !== 0) {
+          const positions = parts[2].split(',')
+            .filter(pos => pos !== '')
+            .map(Number);
+          const winningPos = [];
+          for (let i = 0; i < positions.length; i += 2) {
+            if (i + 1 < positions.length) {
+              winningPos.push([positions[i], positions[i + 1]]);
+            }
           }
+          setWinningPositions(winningPos);
+        } else {
+          setWinningPositions([]);
         }
-        setWinningPositions(winningPos);
       } else {
         setWinningPositions([]);
       }
@@ -223,7 +231,10 @@ function App() {
   };
 
   const getGameStatus = () => {
-    if (gameOver && winner !== 0) {
+    if (gameOver) {
+      if (winner === 0) {
+        return "It's a Draw! 🤝";
+      }
       return winner === 1 ? "You Won! 🎉" : "AI Won! 🤖";
     }
     return isAIMove ? "AI is thinking... 🤔" : "Your turn - Drop a piece! 👇";

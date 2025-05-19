@@ -37,7 +37,15 @@ public class ChatGPTGame {
                     return true;
                 }
                 
-                // Switch players only if no win
+                // Check for draw if no win was detected
+                if (isBoardFull()) {
+                    gameOver = true;
+                    winner = 0; // 0 indicates a draw
+                    System.out.println("GAME OVER: It's a draw! The board is full.");
+                    return true;
+                }
+                
+                // Switch players only if no win or draw
                 currentPlayer = currentPlayer == 1 ? 2 : 1;
                 return true;
             }
@@ -105,6 +113,16 @@ public class ChatGPTGame {
         }
         
         return false;
+    }
+
+    // Check if the board is full (draw condition)
+    private boolean isBoardFull() {
+        for (int col = 0; col < COLS; col++) {
+            if (board[0][col] == 0) {
+                return false; // If any top row cell is empty, board is not full
+            }
+        }
+        return true; // All columns are full
     }
 
     public int[][] getBoard() {

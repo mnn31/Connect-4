@@ -85,9 +85,30 @@ const GameBoard = ({ board, onColumnClick, gameOver, winner, onReset, winningPos
     return winningPositions.some(pos => pos[0] === row && pos[1] === col);
   };
 
+  // Get board container style based on game state
+  const getBoardStyle = () => {
+    if (gameOver) {
+      if (winner === 0) {
+        // Draw game - add a yellow border
+        return { 
+          border: '4px solid #FFC107',
+          boxShadow: '0 0 15px #FFC107'
+        };
+      } else {
+        // Someone won - highlight winner's color
+        const winnerColor = winner === 1 ? '#ffeb3b' : '#f50057';
+        return {
+          border: `4px solid ${winnerColor}`,
+          boxShadow: `0 0 15px ${winnerColor}`
+        };
+      }
+    }
+    return {}; // Default style
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-      <BoardContainer elevation={3}>
+      <BoardContainer elevation={3} sx={getBoardStyle()}>
         <Box sx={{ display: 'flex', flexDirection: 'column' }}>
           {board.map((row, rowIndex) => (
             <Box key={rowIndex} sx={{ display: 'flex' }}>

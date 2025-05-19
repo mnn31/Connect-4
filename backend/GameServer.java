@@ -96,14 +96,17 @@ public class GameServer {
         // Add game state
         response.append(game.isGameOver() ? "1" : "0").append(",").append(game.getWinner()).append("|");
         
-        // Add winning positions if game is over
-        if (game.isGameOver() && game.getWinner() != 0) {
+        // Add winning positions if game is over with a winner (not a draw)
+        if (game.isGameOver() && game.getWinner() > 0) {
             int[][] winningPositions = game.getWinningPositions();
             if (winningPositions != null) {
                 for (int[] pos : winningPositions) {
                     response.append(pos[0]).append(",").append(pos[1]).append(",");
                 }
             }
+        } else if (game.isGameOver() && game.getWinner() == 0) {
+            // It's a draw, add a specific indicator
+            response.append("draw");
         }
         
         return response.toString();
