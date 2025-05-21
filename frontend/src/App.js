@@ -178,8 +178,10 @@ function App() {
 
   const makeAIMove = async () => {
     console.log("🤖 AI MAKING MOVE - START");
+    console.log("Game state before AI move:", { gameOver, winner, isAIMove });
     
     try {
+      console.log("Sending AI move request to server...");
       const aiResponse = await fetch('http://localhost:8080/ai-move', {
         method: 'POST',
         headers: {
@@ -198,8 +200,10 @@ function App() {
 
       // Update the board
       await fetchBoardState();
+      console.log("Board state fetched after AI move");
     } catch (error) {
       console.error('❌ Error making AI move:', error);
+      console.log("Attempting to recover by fetching the current board state...");
       await fetchBoardState();
     } finally {
       console.log("🤖 AI MAKING MOVE - END");

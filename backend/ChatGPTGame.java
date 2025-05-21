@@ -22,18 +22,23 @@ public class ChatGPTGame {
 
     public boolean makeMove(int col) {
         if (gameOver || col < 0 || col >= COLS) {
+            System.out.println("Move rejected - Game over: " + gameOver + " or invalid column: " + col);
             return false;
         }
 
+        System.out.println("Attempting move in column " + col + " by player " + currentPlayer);
+        
         // Find the lowest empty row in the selected column
         for (int row = ROWS - 1; row >= 0; row--) {
             if (board[row][col] == 0) {
                 board[row][col] = currentPlayer;
+                System.out.println("Placed piece at row " + row + ", column " + col);
                 
                 // Check for win after making the move
                 if (checkWin(row, col)) {
                     gameOver = true;
                     winner = currentPlayer;
+                    System.out.println("GAME OVER: Player " + currentPlayer + " wins!");
                     return true;
                 }
                 
@@ -46,10 +51,13 @@ public class ChatGPTGame {
                 }
                 
                 // Switch players only if no win or draw
+                int previousPlayer = currentPlayer;
                 currentPlayer = currentPlayer == 1 ? 2 : 1;
+                System.out.println("Switching player from " + previousPlayer + " to " + currentPlayer);
                 return true;
             }
         }
+        System.out.println("Move rejected - column " + col + " is full.");
         return false;
     }
 

@@ -126,15 +126,17 @@ public class GameServer {
                 return;
             }
             
-            System.out.println("Player move request received");
+            System.out.println("\n👤 Player move request received");
             String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             System.out.println("Request body: " + requestBody);
             
             String column = URLDecoder.decode(requestBody.split("=")[1], StandardCharsets.UTF_8);
             System.out.println("Player column selected: " + column);
             
+            System.out.println("Game status before move - Game over: " + game.isGameOver());
             boolean validMove = game.makeMove(Integer.parseInt(column));
             System.out.println("Move valid: " + validMove);
+            System.out.println("Game status after move - Game over: " + game.isGameOver() + ", Winner: " + game.getWinner());
             
             String response = getBoardState();
             System.out.println("Response: " + response);
@@ -186,6 +188,8 @@ public class GameServer {
                 String response = getBoardState();
                 System.out.println("AI move completed. Sending board state to client:");
                 System.out.println(response);
+                System.out.println("Game over status after move: " + game.isGameOver());
+                System.out.println("Winner after move: " + game.getWinner());
                 System.out.println("==================================================\n");
                 
                 exchange.getResponseHeaders().set("Content-Type", "text/plain");
